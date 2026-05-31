@@ -1,0 +1,46 @@
+services:
+
+  enjoy-db:
+    image: postgres:18-alpine
+    container_name: enjoy-db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_LOCAL_PORT}:5432"
+    volumes:
+      - enjoy_db_data:/var/lib/postgresql/data
+
+  pg_admin:
+    image: dpage/pgadmin4:9.13
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      PGADMIN_LISTEN_PORT: ${PGADMIN_PORT}
+    ports:
+      - "${PGADMIN_PORT}:${PGADMIN_PORT}"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - enjoy-db
+
+
+  backend-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mon-backend-spring
+    ports:
+      - "${BACKEND_PORT}:8080"
+    depends_on:
+      - enjoy-db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://enjoy-db:5432/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+
+volumes:
+  enjoy_db_data:
+  pgadmin_data:
